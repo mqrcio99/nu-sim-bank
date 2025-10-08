@@ -1,73 +1,56 @@
-# Welcome to your Lovable project
+💜 NU Sim Bank
+🏦 Sobre o Projeto
 
-## Project info
+O NU Sim Bank é um simulador bancário digital inspirado na experiência e no design do aplicativo Nubank, criado com foco em simplicidade, fluidez e usabilidade moderna.
 
-**URL**: https://lovable.dev/projects/8430f5ab-42fb-472c-a115-ed233958e73a
+O sistema permite simular funcionalidades bancárias como Pix, transferências, pagamentos, depósitos e controle de gastos, além de possuir três tipos de contas:
 
-## How can I edit this code?
+Cliente: pode movimentar saldo, visualizar transações e solicitar empréstimos.
 
-There are several ways of editing your application.
+Agente Financeiro: analisa e aprova solicitações de empréstimos.
 
-**Use Lovable**
+Administrador: gerencia usuários e visualiza estatísticas gerais do sistema.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8430f5ab-42fb-472c-a115-ed233958e73a) and start prompting.
+🔗 Acesse o site publicado:
+👉 https://nu-sim-bank.vercel.app/
 
-Changes made via Lovable will be committed automatically to this repo.
+🧭 Funcionalidades Principais
 
-**Use your preferred IDE**
+Login com seleção de tipo de conta (Cliente, Agente ou ADM)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Simulação de saldo, Pix, transferência e pagamento
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Histórico de transações salvas em memória (ArrayList)
 
-Follow these steps:
+Painel administrativo para gerenciamento de contas
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Interface intuitiva e responsiva, com design inspirado no Nubank
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Gráficos de consumo total e planejamento financeiro
 
-# Step 3: Install the necessary dependencies.
-npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+<img width="1899" height="941" alt="image" src="https://github.com/user-attachments/assets/8a6c7693-55e9-454a-962d-d2372337dbe8" />
+<img width="1900" height="938" alt="image" src="https://github.com/user-attachments/assets/bc34937a-62e2-4403-acbd-bf07e5310500" />
+<img width="1919" height="939" alt="image" src="https://github.com/user-attachments/assets/af34b4c7-30bf-4d56-8680-fb418f393089" />
+<img width="1900" height="938" alt="image" src="https://github.com/user-attachments/assets/a1134f4f-6a8a-46f6-8641-017389670ea8" />
+⚙️ Tecnologias Utilizadas
 
-**Edit a file directly in GitHub**
+Este projeto foi desenvolvido com:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+⚡ Vite
 
-**Use GitHub Codespaces**
+⚛️ React
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+🟦 TypeScript
 
-## What technologies are used for this project?
+🎨 Tailwind CSS
 
-This project is built with:
+🧩 shadcn/ui
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+💾 ArrayList (para simulação de dados em memória)
 
-## How can I deploy this project?
+🧠 Desenvolvido por
 
-Simply open [Lovable](https://lovable.dev/projects/8430f5ab-42fb-472c-a115-ed233958e73a) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Márcio Camargo de Oliveira
+💻 Estudante de Desenvolvimento de Sistemas
+💬 Apaixonado por design UX/UI e soluções digitais
