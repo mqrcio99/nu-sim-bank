@@ -1,41 +1,55 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, LogOut, UserCog, Clock, DollarSign, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, LogOut, UserCog, Clock, DollarSign, Calendar, Loader2 } from 'lucide-react';
 
 const AgentDashboard = () => {
-  const { currentUser, logout, loans, updateLoanStatus } = useAuth();
+  const { user, profile, role, allLoans, signOut, updateLoanStatus, loading } = useAuth();
   const navigate = useNavigate();
 
-  if (!currentUser) {
-    navigate('/login');
+  useEffect(() => {
+    if (!loading && (!user || role !== 'agent')) {
+      navigate('/login');
+    }
+  }, [user, role, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !profile) {
     return null;
   }
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
 
-  const handleApprove = (loanId: string) => {
-    updateLoanStatus(loanId, 'approved');
+  const handleApprove = async (loanId: string) => {
+    await updateLoanStatus(loanId, 'approved');
     toast.success('Empréstimo aprovado!');
   };
 
-  const handleReject = (loanId: string) => {
-    updateLoanStatus(loanId, 'rejected');
+  const handleReject = async (loanId: string) => {
+    await updateLoanStatus(loanId, 'rejected');
     toast.error('Empréstimo recusado');
   };
 
-  const pendingLoans = loans.filter(loan => loan.status === 'pending');
-  const processedLoans = loans.filter(loan => loan.status !== 'pending');
+  const pendingLoans = allLoans.filter(loan => loan.status === 'pending');
+  const processedLoans = allLoans.filter(loan => loan.status !== 'pending');
 
   const stats = [
     { label: 'Solicitações Pendentes', value: pendingLoans.length, icon: Clock, color: 'text-orange-600' },
-    { label: 'Aprovados', value: loans.filter(l => l.status === 'approved').length, icon: CheckCircle, color: 'text-success' },
-    { label: 'Recusados', value: loans.filter(l => l.status === 'rejected').length, icon: XCircle, color: 'text-destructive' }
+    { label: 'Aprovados', value: allLoans.filter(l => l.status === 'approved').length, icon: CheckCircle, color: 'text-success' },
+    { label: 'Recusados', value: allLoans.filter(l => l.status === 'rejected').length, icon: XCircle, color: 'text-destructive' }
   ];
 
   return (
@@ -50,7 +64,7 @@ const AgentDashboard = () => {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">Agente Financeiro</h1>
-                <p className="text-muted-foreground">{currentUser.name}</p>
+                <p className="text-muted-foreground">{profile.name}</p>
               </div>
             </div>
           </div>
@@ -92,7 +106,7 @@ const AgentDashboard = () => {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-lg">{loan.clientName}</h3>
+                        <h3 className="font-bold text-lg">{loan.profiles?.name || 'Cliente'}</h3>
                         <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold">
                           Pendente
                         </span>
@@ -110,7 +124,7 @@ const AgentDashboard = () => {
                         </div>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Solicitado em {loan.requestDate.toLocaleDateString('pt-BR')}
+                        Solicitado em {new Date(loan.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -145,7 +159,7 @@ const AgentDashboard = () => {
               {processedLoans.map((loan) => (
                 <div key={loan.id} className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
                   <div>
-                    <p className="font-semibold">{loan.clientName}</p>
+                    <p className="font-semibold">{loan.profiles?.name || 'Cliente'}</p>
                     <p className="text-sm text-muted-foreground">
                       R$ {loan.amount.toLocaleString('pt-BR')} • {loan.term} meses
                     </p>

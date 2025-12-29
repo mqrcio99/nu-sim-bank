@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -16,51 +16,69 @@ import {
   Wallet,
   TrendingUp,
   Receipt,
-  PiggyBank
+  PiggyBank,
+  Loader2
 } from 'lucide-react';
 
 const ClientDashboard = () => {
-  const { currentUser, logout, addTransaction, requestLoan } = useAuth();
+  const { user, profile, account, role, transactions, signOut, addTransaction, requestLoan, loading } = useAuth();
   const navigate = useNavigate();
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDescription, setTransferDescription] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
   const [loanTerm, setLoanTerm] = useState('12');
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  if (!currentUser) {
-    navigate('/login');
+  useEffect(() => {
+    if (!loading && (!user || role !== 'client')) {
+      navigate('/login');
+    }
+  }, [user, role, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !profile || !account) {
     return null;
   }
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
 
-  const handleTransfer = () => {
+  const handleTransfer = async (type: 'pix' | 'transfer' | 'payment' | 'deposit') => {
     const amount = parseFloat(transferAmount);
     if (isNaN(amount) || amount <= 0) {
       toast.error('Valor inválido');
       return;
     }
-    if (amount > currentUser.balance) {
+    
+    const isDebit = type !== 'deposit';
+    if (isDebit && amount > account.balance) {
       toast.error('Saldo insuficiente');
       return;
     }
 
-    addTransaction({
-      type: 'transfer',
-      amount: -amount,
-      description: transferDescription || 'Transferência',
-      category: 'Transferência'
+    await addTransaction({
+      type,
+      amount: isDebit ? -amount : amount,
+      description: transferDescription || (type === 'deposit' ? 'Depósito' : 'Transferência'),
+      category: type === 'deposit' ? 'Recebimento' : 'Transferência'
     });
 
-    toast.success('Transferência realizada com sucesso!');
+    toast.success(type === 'deposit' ? 'Depósito realizado!' : 'Transferência realizada!');
     setTransferAmount('');
     setTransferDescription('');
+    setDialogOpen(false);
   };
 
-  const handleLoanRequest = () => {
+  const handleLoanRequest = async () => {
     const amount = parseFloat(loanAmount);
     const term = parseInt(loanTerm);
     
@@ -69,16 +87,16 @@ const ClientDashboard = () => {
       return;
     }
 
-    requestLoan(amount, term);
+    await requestLoan(amount, term);
     toast.success('Solicitação de empréstimo enviada!');
     setLoanAmount('');
   };
 
   const quickActions = [
-    { icon: Send, label: 'Pix', color: 'text-primary' },
-    { icon: ArrowUpRight, label: 'Transferir', color: 'text-blue-600' },
-    { icon: Receipt, label: 'Pagar', color: 'text-orange-600' },
-    { icon: Wallet, label: 'Depositar', color: 'text-success' }
+    { icon: Send, label: 'Pix', color: 'text-primary', type: 'pix' as const },
+    { icon: ArrowUpRight, label: 'Transferir', color: 'text-blue-600', type: 'transfer' as const },
+    { icon: Receipt, label: 'Pagar', color: 'text-orange-600', type: 'payment' as const },
+    { icon: Wallet, label: 'Depositar', color: 'text-success', type: 'deposit' as const }
   ];
 
   const spendingByCategory = [
@@ -94,7 +112,7 @@ const ClientDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Olá, {currentUser.name.split(' ')[0]}! 👋</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Olá, {profile.name.split(' ')[0]}! 👋</h1>
             <p className="text-muted-foreground">Bem-vindo de volta</p>
           </div>
           <Button variant="ghost" onClick={handleLogout} className="gap-2">
@@ -111,14 +129,14 @@ const ClientDashboard = () => {
               <span className="text-sm font-medium">Saldo disponível</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold">
-              R$ {currentUser.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {account.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </h2>
             <div className="flex items-center gap-4 pt-4 border-t border-primary-foreground/20">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
                 <div>
                   <p className="text-xs text-primary-foreground/80">Limite do cartão</p>
-                  <p className="font-semibold">R$ {currentUser.creditLimit?.toLocaleString('pt-BR')}</p>
+                  <p className="font-semibold">R$ {account.credit_limit?.toLocaleString('pt-BR')}</p>
                 </div>
               </div>
             </div>
@@ -128,7 +146,7 @@ const ClientDashboard = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           {quickActions.map((action, index) => (
-            <Dialog key={index}>
+            <Dialog key={index} open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Card className="p-6 cursor-pointer hover:shadow-hover transition-smooth group">
                   <div className="flex flex-col items-center gap-3 text-center">
@@ -155,7 +173,7 @@ const ClientDashboard = () => {
                     value={transferDescription}
                     onChange={(e) => setTransferDescription(e.target.value)}
                   />
-                  <Button onClick={handleTransfer} className="w-full">
+                  <Button onClick={() => handleTransfer(action.type)} className="w-full">
                     Confirmar
                   </Button>
                 </div>
@@ -229,30 +247,34 @@ const ClientDashboard = () => {
         <Card className="p-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
           <h3 className="font-bold text-lg mb-4">Transações Recentes</h3>
           <div className="space-y-3">
-            {currentUser.transactions.slice(0, 5).map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-smooth">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    transaction.amount > 0 ? 'bg-success/20' : 'bg-destructive/20'
-                  }`}>
-                    {transaction.amount > 0 ? (
-                      <ArrowDownLeft className={`w-5 h-5 text-success`} />
-                    ) : (
-                      <ArrowUpRight className={`w-5 h-5 text-destructive`} />
-                    )}
+            {transactions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">Nenhuma transação ainda</p>
+            ) : (
+              transactions.slice(0, 5).map((transaction) => (
+                <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-accent transition-smooth">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      transaction.amount > 0 ? 'bg-success/20' : 'bg-destructive/20'
+                    }`}>
+                      {transaction.amount > 0 ? (
+                        <ArrowDownLeft className={`w-5 h-5 text-success`} />
+                      ) : (
+                        <ArrowUpRight className={`w-5 h-5 text-destructive`} />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{transaction.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(transaction.created_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm">{transaction.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {transaction.date.toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
+                  <span className={`font-bold ${transaction.amount > 0 ? 'text-success' : 'text-foreground'}`}>
+                    {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
-                <span className={`font-bold ${transaction.amount > 0 ? 'text-success' : 'text-foreground'}`}>
-                  {transaction.amount > 0 ? '+' : ''}R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>

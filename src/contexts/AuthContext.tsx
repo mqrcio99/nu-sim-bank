@@ -1,246 +1,299 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 export type UserRole = 'client' | 'agent' | 'admin';
 
+export interface Profile {
+  id: string;
+  name: string;
+  cpf: string | null;
+}
+
+export interface Account {
+  id: string;
+  user_id: string;
+  balance: number;
+  credit_limit: number;
+}
+
 export interface Transaction {
   id: string;
+  user_id: string;
   type: 'pix' | 'transfer' | 'payment' | 'deposit';
   amount: number;
   description: string;
-  date: Date;
-  category?: string;
+  category: string | null;
+  created_at: string;
 }
 
 export interface Loan {
   id: string;
-  clientId: string;
-  clientName: string;
+  user_id: string;
   amount: number;
   term: number;
   status: 'pending' | 'approved' | 'rejected';
-  requestDate: Date;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  cpf: string;
-  role: UserRole;
-  balance: number;
-  creditLimit?: number;
-  transactions: Transaction[];
-  loans: Loan[];
+  created_at: string;
+  profiles?: Profile;
 }
 
 interface AuthContextType {
-  currentUser: User | null;
-  users: User[];
+  user: User | null;
+  session: Session | null;
+  profile: Profile | null;
+  account: Account | null;
+  role: UserRole | null;
+  transactions: Transaction[];
   loans: Loan[];
-  login: (email: string, password: string, role: UserRole) => boolean;
-  logout: () => void;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
-  requestLoan: (amount: number, term: number) => void;
-  updateLoanStatus: (loanId: string, status: 'approved' | 'rejected') => void;
-  addUser: (user: Omit<User, 'id' | 'transactions' | 'loans'>) => void;
-  updateUser: (userId: string, updates: Partial<User>) => void;
-  deleteUser: (userId: string) => void;
+  allLoans: Loan[];
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, cpf?: string) => Promise<{ error: Error | null }>;
+  signOut: () => Promise<void>;
+  addTransaction: (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
+  requestLoan: (amount: number, term: number) => Promise<void>;
+  updateLoanStatus: (loanId: string, status: 'approved' | 'rejected') => Promise<void>;
+  refreshData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock initial data
-const initialUsers: User[] = [
-  {
-    id: '1',
-    name: 'João Silva',
-    email: 'joao@email.com',
-    cpf: '123.456.789-00',
-    role: 'client',
-    balance: 5420.50,
-    creditLimit: 10000,
-    transactions: [
-      {
-        id: '1',
-        type: 'pix',
-        amount: -150.00,
-        description: 'Transferência para Maria',
-        date: new Date('2025-01-05'),
-        category: 'Transferência'
-      },
-      {
-        id: '2',
-        type: 'payment',
-        amount: -89.90,
-        description: 'Conta de luz',
-        date: new Date('2025-01-03'),
-        category: 'Contas'
-      },
-      {
-        id: '3',
-        type: 'deposit',
-        amount: 2500.00,
-        description: 'Salário',
-        date: new Date('2025-01-01'),
-        category: 'Recebimento'
-      }
-    ],
-    loans: []
-  },
-  {
-    id: '2',
-    name: 'Ana Costa',
-    email: 'ana@email.com',
-    cpf: '987.654.321-00',
-    role: 'agent',
-    balance: 0,
-    transactions: [],
-    loans: []
-  },
-  {
-    id: '3',
-    name: 'Carlos Admin',
-    email: 'admin@email.com',
-    cpf: '111.222.333-44',
-    role: 'admin',
-    balance: 0,
-    transactions: [],
-    loans: []
-  }
-];
-
-const initialLoans: Loan[] = [
-  {
-    id: '1',
-    clientId: '1',
-    clientName: 'João Silva',
-    amount: 15000,
-    term: 24,
-    status: 'pending',
-    requestDate: new Date('2025-01-06')
-  }
-];
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(initialUsers);
-  const [loans, setLoans] = useState<Loan[]>(initialLoans);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
+  const [role, setRole] = useState<UserRole | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [allLoans, setAllLoans] = useState<Loan[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const login = (email: string, password: string, role: UserRole): boolean => {
-    const user = users.find(u => u.email === email && u.role === role);
+  const fetchUserData = async (userId: string) => {
+    try {
+      // Fetch profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (profileData) setProfile(profileData);
+
+      // Fetch role
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (roleData) setRole(roleData.role as UserRole);
+
+      // Fetch account
+      const { data: accountData } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (accountData) setAccount(accountData);
+
+      // Fetch transactions
+      const { data: transactionsData } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (transactionsData) setTransactions(transactionsData as Transaction[]);
+
+      // Fetch user's loans
+      const { data: loansData } = await supabase
+        .from('loans')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (loansData) setLoans(loansData as Loan[]);
+
+      // If agent or admin, fetch all loans
+      if (roleData?.role === 'agent' || roleData?.role === 'admin') {
+        const { data: allLoansData } = await supabase
+          .from('loans')
+          .select(`*, profiles(name)`)
+          .order('created_at', { ascending: false });
+        
+        if (allLoansData) setAllLoans(allLoansData as Loan[]);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserData(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+          setAccount(null);
+          setRole(null);
+          setTransactions([]);
+          setLoans([]);
+          setAllLoans([]);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserData(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string, name: string, cpf?: string) => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: { name, cpf }
+      }
+    });
+    return { error };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const refreshData = async () => {
     if (user) {
-      setCurrentUser(user);
-      return true;
+      await fetchUserData(user.id);
     }
-    return false;
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-  };
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => {
+    if (!user || !account) return;
 
-  const addTransaction = (transaction: Omit<Transaction, 'id' | 'date'>) => {
-    if (!currentUser) return;
-
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: Date.now().toString(),
-      date: new Date()
-    };
-
-    const updatedUser = {
-      ...currentUser,
-      balance: currentUser.balance + transaction.amount,
-      transactions: [newTransaction, ...currentUser.transactions]
-    };
-
-    setCurrentUser(updatedUser);
-    setUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
-  };
-
-  const requestLoan = (amount: number, term: number) => {
-    if (!currentUser) return;
-
-    const newLoan: Loan = {
-      id: Date.now().toString(),
-      clientId: currentUser.id,
-      clientName: currentUser.name,
-      amount,
-      term,
-      status: 'pending',
-      requestDate: new Date()
-    };
-
-    setLoans([...loans, newLoan]);
-    
-    const updatedUser = {
-      ...currentUser,
-      loans: [...currentUser.loans, newLoan]
-    };
-    
-    setCurrentUser(updatedUser);
-    setUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
-  };
-
-  const updateLoanStatus = (loanId: string, status: 'approved' | 'rejected') => {
-    setLoans(loans.map(loan => 
-      loan.id === loanId ? { ...loan, status } : loan
-    ));
-    
-    setUsers(users.map(user => ({
-      ...user,
-      loans: user.loans.map(loan => 
-        loan.id === loanId ? { ...loan, status } : loan
-      )
-    })));
-
-    if (currentUser) {
-      setCurrentUser({
-        ...currentUser,
-        loans: currentUser.loans.map(loan => 
-          loan.id === loanId ? { ...loan, status } : loan
-        )
+    const { error } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: user.id,
+        type: transaction.type,
+        amount: transaction.amount,
+        description: transaction.description,
+        category: transaction.category
       });
+
+    if (error) {
+      console.error('Error adding transaction:', error);
+      return;
     }
+
+    // Update account balance
+    const newBalance = account.balance + transaction.amount;
+    await supabase
+      .from('accounts')
+      .update({ balance: newBalance })
+      .eq('user_id', user.id);
+
+    await refreshData();
   };
 
-  const addUser = (user: Omit<User, 'id' | 'transactions' | 'loans'>) => {
-    const newUser: User = {
-      ...user,
-      id: Date.now().toString(),
-      transactions: [],
-      loans: []
-    };
-    setUsers([...users, newUser]);
+  const requestLoan = async (amount: number, term: number) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('loans')
+      .insert({
+        user_id: user.id,
+        amount,
+        term,
+        status: 'pending'
+      });
+
+    if (error) {
+      console.error('Error requesting loan:', error);
+      return;
+    }
+
+    await refreshData();
   };
 
-  const updateUser = (userId: string, updates: Partial<User>) => {
-    setUsers(users.map(u => u.id === userId ? { ...u, ...updates } : u));
-    if (currentUser?.id === userId) {
-      setCurrentUser({ ...currentUser, ...updates });
-    }
-  };
+  const updateLoanStatus = async (loanId: string, status: 'approved' | 'rejected') => {
+    const { error } = await supabase
+      .from('loans')
+      .update({ status })
+      .eq('id', loanId);
 
-  const deleteUser = (userId: string) => {
-    setUsers(users.filter(u => u.id !== userId));
-    if (currentUser?.id === userId) {
-      setCurrentUser(null);
+    if (error) {
+      console.error('Error updating loan status:', error);
+      return;
     }
+
+    // If approved, add loan amount to user's account
+    if (status === 'approved') {
+      const loan = allLoans.find(l => l.id === loanId);
+      if (loan) {
+        const { data: accountData } = await supabase
+          .from('accounts')
+          .select('balance')
+          .eq('user_id', loan.user_id)
+          .single();
+
+        if (accountData) {
+          await supabase
+            .from('accounts')
+            .update({ balance: accountData.balance + loan.amount })
+            .eq('user_id', loan.user_id);
+        }
+      }
+    }
+
+    await refreshData();
   };
 
   return (
     <AuthContext.Provider value={{
-      currentUser,
-      users,
+      user,
+      session,
+      profile,
+      account,
+      role,
+      transactions,
       loans,
-      login,
-      logout,
+      allLoans,
+      loading,
+      signIn,
+      signUp,
+      signOut,
       addTransaction,
       requestLoan,
       updateLoanStatus,
-      addUser,
-      updateUser,
-      deleteUser
+      refreshData
     }}>
       {children}
     </AuthContext.Provider>

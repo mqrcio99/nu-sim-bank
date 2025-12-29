@@ -1,34 +1,36 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { LogIn, User, UserCog, Shield } from 'lucide-react';
+import { CreditCard, Loader2 } from 'lucide-react';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const { signIn, signUp, user, loading: authLoading, role } = useAuth();
+  
+  // Login state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  
+  // Signup state
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupCpf, setSignupCpf] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupLoading, setSignupLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedRole) {
-      toast.error('Selecione um tipo de conta');
-      return;
-    }
-
-    const success = login(email, password, selectedRole);
-    
-    if (success) {
-      toast.success('Login realizado com sucesso!');
-      switch (selectedRole) {
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (user && role) {
+      switch (role) {
         case 'client':
-          navigate('/dashboard');
+          navigate('/client');
           break;
         case 'agent':
           navigate('/agent');
@@ -37,112 +39,187 @@ const Login = () => {
           navigate('/admin');
           break;
       }
-    } else {
-      toast.error('Email, senha ou tipo de conta incorretos');
     }
+  }, [user, role, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+
+    const { error } = await signIn(loginEmail, loginPassword);
+    
+    if (error) {
+      toast.error('Erro ao fazer login: ' + error.message);
+    } else {
+      toast.success('Login realizado com sucesso!');
+    }
+    
+    setLoginLoading(false);
   };
 
-  const roles = [
-    { value: 'client' as UserRole, label: 'Cliente', icon: User, description: 'Acesse sua conta' },
-    { value: 'agent' as UserRole, label: 'Agente Financeiro', icon: UserCog, description: 'Gerencie empréstimos' },
-    { value: 'admin' as UserRole, label: 'Administrador', icon: Shield, description: 'Administre usuários' }
-  ];
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignupLoading(true);
+
+    const { error } = await signUp(signupEmail, signupPassword, signupName, signupCpf);
+    
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast.error('Este email já está cadastrado.');
+      } else {
+        toast.error('Erro ao cadastrar: ' + error.message);
+      }
+    } else {
+      toast.success('Cadastro realizado! Verifique seu email para confirmar.');
+    }
+    
+    setSignupLoading(false);
+  };
+
+  const formatCpf = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+    if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-nu-purple flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center gradient-primary p-4">
-      <Card className="w-full max-w-md p-8 shadow-purple animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-br from-nu-purple via-nu-purple-dark to-purple-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full gradient-primary flex items-center justify-center">
-            <LogIn className="w-8 h-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4">
+            <CreditCard className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Bem-vindo</h1>
-          <p className="text-muted-foreground mt-2">Faça login na sua conta</p>
+          <h1 className="text-3xl font-bold text-white">NU Sim Bank</h1>
+          <p className="text-white/70 mt-2">Seu banco digital simulado</p>
         </div>
 
-        {!selectedRole ? (
-          <div className="space-y-3">
-            <p className="text-sm font-medium text-center mb-4">Selecione o tipo de conta:</p>
-            {roles.map((role) => (
-              <button
-                key={role.value}
-                onClick={() => setSelectedRole(role.value)}
-                className="w-full p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-accent transition-smooth text-left group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-smooth">
-                    <role.icon className="w-6 h-6" />
+        <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-nu-purple text-xl">Bem-vindo!</CardTitle>
+            <CardDescription>Entre ou crie sua conta</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="login">Entrar</TabsTrigger>
+                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                    />
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{role.label}</p>
-                    <p className="text-sm text-muted-foreground">{role.description}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Senha</Label>
+                    <Input
+                      id="login-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                    />
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <form onSubmit={handleLogin} className="space-y-6 animate-slide-up">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">
-                {roles.find(r => r.value === selectedRole)?.icon && (
-                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                    {(() => {
-                      const Icon = roles.find(r => r.value === selectedRole)!.icon;
-                      return <Icon className="w-5 h-5 text-primary-foreground" />;
-                    })()}
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-nu-purple hover:bg-nu-purple-dark"
+                    disabled={loginLoading}
+                  >
+                    {loginLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
+                    Entrar
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Nome completo</Label>
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      placeholder="João Silva"
+                      value={signupName}
+                      onChange={(e) => setSignupName(e.target.value)}
+                      required
+                    />
                   </div>
-                )}
-                <span className="font-semibold text-sm">{roles.find(r => r.value === selectedRole)?.label}</span>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedRole(null)}
-              >
-                Trocar
-              </Button>
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-cpf">CPF</Label>
+                    <Input
+                      id="signup-cpf"
+                      type="text"
+                      placeholder="000.000.000-00"
+                      value={signupCpf}
+                      onChange={(e) => setSignupCpf(formatCpf(e.target.value))}
+                      maxLength={14}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Senha</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      placeholder="Mínimo 6 caracteres"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      minLength={6}
+                      required
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-nu-purple hover:bg-nu-purple-dark"
+                    disabled={signupLoading}
+                  >
+                    {signupLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : null}
+                    Criar conta
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
-                <Input
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Senha</label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full gradient-primary text-primary-foreground shadow-purple">
-              Entrar
-            </Button>
-
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground mb-2 font-semibold">Contas de demonstração:</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p>• Cliente: joao@email.com</p>
-                <p>• Agente: ana@email.com</p>
-                <p>• Admin: admin@email.com</p>
-                <p className="mt-2 italic">Senha: qualquer valor</p>
-              </div>
-            </div>
-          </form>
-        )}
-      </Card>
+        <p className="text-center text-white/60 text-sm mt-6">
+          Simulador bancário para fins educacionais
+        </p>
+      </div>
     </div>
   );
 };
