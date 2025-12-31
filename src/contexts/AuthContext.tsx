@@ -50,6 +50,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, name: string, cpf?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
   requestLoan: (amount: number, term: number) => Promise<void>;
   updateLoanStatus: (loanId: string, status: 'approved' | 'rejected') => Promise<void>;
@@ -189,6 +191,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await supabase.auth.signOut();
   };
 
+  const resetPassword = async (email: string) => {
+    const redirectUrl = `${window.location.origin}/reset-password`;
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl
+    });
+    return { error };
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    return { error };
+  };
+
   const refreshData = async () => {
     if (user) {
       await fetchUserData(user.id);
@@ -290,6 +308,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       signIn,
       signUp,
       signOut,
+      resetPassword,
+      updatePassword,
       addTransaction,
       requestLoan,
       updateLoanStatus,

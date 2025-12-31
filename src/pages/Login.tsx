@@ -7,16 +7,23 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { CreditCard, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2, ArrowLeft } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn, signUp, user, loading: authLoading, role } = useAuth();
+  const { signIn, signUp, resetPassword, user, loading: authLoading, role } = useAuth();
+  
+  // View state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  
+  // Forgot password state
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
   
   // Signup state
   const [signupName, setSignupName] = useState('');
@@ -76,6 +83,23 @@ const Login = () => {
     setSignupLoading(false);
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+
+    const { error } = await resetPassword(forgotEmail);
+    
+    if (error) {
+      toast.error('Erro ao enviar email: ' + error.message);
+    } else {
+      toast.success('Email enviado! Verifique sua caixa de entrada.');
+      setShowForgotPassword(false);
+      setForgotEmail('');
+    }
+    
+    setForgotLoading(false);
+  };
+
   const formatCpf = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 3) return numbers;
@@ -105,111 +129,164 @@ const Login = () => {
         </div>
 
         <Card className="bg-card/95 backdrop-blur-sm shadow-2xl border-0">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-primary text-xl">Bem-vindo!</CardTitle>
-            <CardDescription>Entre ou crie sua conta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
+          {showForgotPassword ? (
+            <>
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-primary text-xl">Esqueci minha senha</CardTitle>
+                <CardDescription>Digite seu email para receber o link de recuperação</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="forgot-email">Email</Label>
                     <Input
-                      id="login-email"
+                      id="forgot-email"
                       type="email"
                       placeholder="seu@email.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Senha</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
                       required
                     />
                   </div>
                   <Button 
                     type="submit" 
                     className="w-full"
-                    disabled={loginLoading}
+                    disabled={forgotLoading}
                   >
-                    {loginLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                    Entrar
+                    {forgotLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                    Enviar link de recuperação
                   </Button>
                 </form>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nome completo</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="João Silva"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-cpf">CPF</Label>
-                    <Input
-                      id="signup-cpf"
-                      type="text"
-                      placeholder="000.000.000-00"
-                      value={signupCpf}
-                      onChange={(e) => setSignupCpf(formatCpf(e.target.value))}
-                      maxLength={14}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Mínimo 6 caracteres"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      minLength={6}
-                      required
-                    />
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={signupLoading}
+                
+                <div className="mt-4 text-center">
+                  <button 
+                    onClick={() => setShowForgotPassword(false)}
+                    className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
-                    {signupLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                    Criar conta
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Voltar ao login
+                  </button>
+                </div>
+              </CardContent>
+            </>
+          ) : (
+            <>
+              <CardHeader className="text-center pb-4">
+                <CardTitle className="text-primary text-xl">Bem-vindo!</CardTitle>
+                <CardDescription>Entre ou crie sua conta</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="login" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
+                    <TabsTrigger value="login">Entrar</TabsTrigger>
+                    <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="login">
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email">Email</Label>
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Label htmlFor="login-password">Senha</Label>
+                          <button
+                            type="button"
+                            onClick={() => setShowForgotPassword(true)}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            Esqueci minha senha
+                          </button>
+                        </div>
+                        <Input
+                          id="login-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={loginLoading}
+                      >
+                        {loginLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                        Entrar
+                      </Button>
+                    </form>
+                  </TabsContent>
+                  
+                  <TabsContent value="signup">
+                    <form onSubmit={handleSignup} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-name">Nome completo</Label>
+                        <Input
+                          id="signup-name"
+                          type="text"
+                          placeholder="João Silva"
+                          value={signupName}
+                          onChange={(e) => setSignupName(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email">Email</Label>
+                        <Input
+                          id="signup-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          value={signupEmail}
+                          onChange={(e) => setSignupEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-cpf">CPF</Label>
+                        <Input
+                          id="signup-cpf"
+                          type="text"
+                          placeholder="000.000.000-00"
+                          value={signupCpf}
+                          onChange={(e) => setSignupCpf(formatCpf(e.target.value))}
+                          maxLength={14}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password">Senha</Label>
+                        <Input
+                          id="signup-password"
+                          type="password"
+                          placeholder="Mínimo 6 caracteres"
+                          value={signupPassword}
+                          onChange={(e) => setSignupPassword(e.target.value)}
+                          minLength={6}
+                          required
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={signupLoading}
+                      >
+                        {signupLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                        Criar conta
+                      </Button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </>
+          )}
         </Card>
 
         <p className="text-center text-primary-foreground/60 text-sm mt-6">
