@@ -86,27 +86,27 @@ const Login = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-nu-purple flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      <div className="min-h-screen gradient-primary flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-nu-purple via-nu-purple-dark to-purple-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen gradient-primary flex items-center justify-center p-4">
+      <div className="w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4">
-            <CreditCard className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 shadow-purple">
+            <CreditCard className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-white">NU Sim Bank</h1>
-          <p className="text-white/70 mt-2">Seu banco digital simulado</p>
+          <h1 className="text-3xl font-bold text-primary-foreground">NU Sim Bank</h1>
+          <p className="text-primary-foreground/70 mt-2">Seu banco digital simulado</p>
         </div>
 
-        <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border-0">
+        <Card className="bg-card/95 backdrop-blur-sm shadow-2xl border-0">
           <CardHeader className="text-center pb-4">
-            <CardTitle className="text-nu-purple text-xl">Bem-vindo!</CardTitle>
+            <CardTitle className="text-primary text-xl">Bem-vindo!</CardTitle>
             <CardDescription>Entre ou crie sua conta</CardDescription>
           </CardHeader>
           <CardContent>
@@ -142,12 +142,10 @@ const Login = () => {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-nu-purple hover:bg-nu-purple-dark"
+                    className="w-full"
                     disabled={loginLoading}
                   >
-                    {loginLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : null}
+                    {loginLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                     Entrar
                   </Button>
                 </form>
@@ -202,12 +200,10 @@ const Login = () => {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full bg-nu-purple hover:bg-nu-purple-dark"
+                    className="w-full"
                     disabled={signupLoading}
                   >
-                    {signupLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : null}
+                    {signupLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                     Criar conta
                   </Button>
                 </form>
@@ -216,7 +212,7 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-white/60 text-sm mt-6">
+        <p className="text-center text-primary-foreground/60 text-sm mt-6">
           Simulador bancário para fins educacionais
         </p>
       </div>
