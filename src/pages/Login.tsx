@@ -1,43 +1,34 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { CreditCard, Loader2, ArrowLeft } from 'lucide-react';
+import { LogIn, User, UserCog, Shield } from 'lucide-react';
 
 const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const { login } = useAuth();
   const navigate = useNavigate();
-  const { signIn, signUp, resetPassword, user, loading: authLoading, role } = useAuth();
-  
-  // View state
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  
-  // Login state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-  
-  // Forgot password state
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotLoading, setForgotLoading] = useState(false);
-  
-  // Signup state
-  const [signupName, setSignupName] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupCpf, setSignupCpf] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupLoading, setSignupLoading] = useState(false);
 
-  // Redirect if already logged in
-  React.useEffect(() => {
-    if (user && role) {
-      switch (role) {
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedRole) {
+      toast.error('Selecione um tipo de conta');
+      return;
+    }
+
+    const success = login(email, password, selectedRole);
+    
+    if (success) {
+      toast.success('Login realizado com sucesso!');
+      switch (selectedRole) {
         case 'client':
-          navigate('/client');
+          navigate('/dashboard');
           break;
         case 'agent':
           navigate('/agent');
@@ -46,253 +37,112 @@ const Login = () => {
           navigate('/admin');
           break;
       }
-    }
-  }, [user, role, navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true);
-
-    const { error } = await signIn(loginEmail, loginPassword);
-    
-    if (error) {
-      toast.error('Erro ao fazer login: ' + error.message);
     } else {
-      toast.success('Login realizado com sucesso!');
+      toast.error('Email, senha ou tipo de conta incorretos');
     }
-    
-    setLoginLoading(false);
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSignupLoading(true);
-
-    const { error } = await signUp(signupEmail, signupPassword, signupName, signupCpf);
-    
-    if (error) {
-      if (error.message.includes('already registered')) {
-        toast.error('Este email já está cadastrado.');
-      } else {
-        toast.error('Erro ao cadastrar: ' + error.message);
-      }
-    } else {
-      toast.success('Cadastro realizado! Verifique seu email para confirmar.');
-    }
-    
-    setSignupLoading(false);
-  };
-
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotLoading(true);
-
-    const { error } = await resetPassword(forgotEmail);
-    
-    if (error) {
-      toast.error('Erro ao enviar email: ' + error.message);
-    } else {
-      toast.success('Email enviado! Verifique sua caixa de entrada.');
-      setShowForgotPassword(false);
-      setForgotEmail('');
-    }
-    
-    setForgotLoading(false);
-  };
-
-  const formatCpf = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
-    if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
-    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
-  };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen gradient-primary flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
-      </div>
-    );
-  }
+  const roles = [
+    { value: 'client' as UserRole, label: 'Cliente', icon: User, description: 'Acesse sua conta' },
+    { value: 'agent' as UserRole, label: 'Agente Financeiro', icon: UserCog, description: 'Gerencie empréstimos' },
+    { value: 'admin' as UserRole, label: 'Administrador', icon: Shield, description: 'Administre usuários' }
+  ];
 
   return (
-    <div className="min-h-screen gradient-primary flex items-center justify-center p-4">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Logo */}
+    <div className="min-h-screen flex items-center justify-center gradient-primary p-4">
+      <Card className="w-full max-w-md p-8 shadow-purple animate-fade-in">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl mb-4 shadow-purple">
-            <CreditCard className="w-8 h-8 text-primary-foreground" />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full gradient-primary flex items-center justify-center">
+            <LogIn className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-primary-foreground">NU Sim Bank</h1>
-          <p className="text-primary-foreground/70 mt-2">Seu banco digital simulado</p>
+          <h1 className="text-3xl font-bold text-foreground">Bem-vindo</h1>
+          <p className="text-muted-foreground mt-2">Faça login na sua conta</p>
         </div>
 
-        <Card className="bg-card/95 backdrop-blur-sm shadow-2xl border-0">
-          {showForgotPassword ? (
-            <>
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-primary text-xl">Esqueci minha senha</CardTitle>
-                <CardDescription>Digite seu email para receber o link de recuperação</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleForgotPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="forgot-email">Email</Label>
-                    <Input
-                      id="forgot-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      required
-                    />
+        {!selectedRole ? (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-center mb-4">Selecione o tipo de conta:</p>
+            {roles.map((role) => (
+              <button
+                key={role.value}
+                onClick={() => setSelectedRole(role.value)}
+                className="w-full p-4 rounded-xl border-2 border-border hover:border-primary hover:bg-accent transition-smooth text-left group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-secondary flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-smooth">
+                    <role.icon className="w-6 h-6" />
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={forgotLoading}
-                  >
-                    {forgotLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                    Enviar link de recuperação
-                  </Button>
-                </form>
-                
-                <div className="mt-4 text-center">
-                  <button 
-                    onClick={() => setShowForgotPassword(false)}
-                    className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <ArrowLeft className="w-4 h-4 mr-1" />
-                    Voltar ao login
-                  </button>
+                  <div>
+                    <p className="font-semibold text-foreground">{role.label}</p>
+                    <p className="text-sm text-muted-foreground">{role.description}</p>
+                  </div>
                 </div>
-              </CardContent>
-            </>
-          ) : (
-            <>
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-primary text-xl">Bem-vindo!</CardTitle>
-                <CardDescription>Entre ou crie sua conta</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="login" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="login">Entrar</TabsTrigger>
-                    <TabsTrigger value="signup">Cadastrar</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="login">
-                    <form onSubmit={handleLogin} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="login-email">Email</Label>
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <Label htmlFor="login-password">Senha</Label>
-                          <button
-                            type="button"
-                            onClick={() => setShowForgotPassword(true)}
-                            className="text-xs text-primary hover:underline"
-                          >
-                            Esqueci minha senha
-                          </button>
-                        </div>
-                        <Input
-                          id="login-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={loginLoading}
-                      >
-                        {loginLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                        Entrar
-                      </Button>
-                    </form>
-                  </TabsContent>
-                  
-                  <TabsContent value="signup">
-                    <form onSubmit={handleSignup} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-name">Nome completo</Label>
-                        <Input
-                          id="signup-name"
-                          type="text"
-                          placeholder="João Silva"
-                          value={signupName}
-                          onChange={(e) => setSignupName(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-email">Email</Label>
-                        <Input
-                          id="signup-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={signupEmail}
-                          onChange={(e) => setSignupEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-cpf">CPF</Label>
-                        <Input
-                          id="signup-cpf"
-                          type="text"
-                          placeholder="000.000.000-00"
-                          value={signupCpf}
-                          onChange={(e) => setSignupCpf(formatCpf(e.target.value))}
-                          maxLength={14}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-password">Senha</Label>
-                        <Input
-                          id="signup-password"
-                          type="password"
-                          placeholder="Mínimo 6 caracteres"
-                          value={signupPassword}
-                          onChange={(e) => setSignupPassword(e.target.value)}
-                          minLength={6}
-                          required
-                        />
-                      </div>
-                      <Button 
-                        type="submit" 
-                        className="w-full"
-                        disabled={signupLoading}
-                      >
-                        {signupLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                        Criar conta
-                      </Button>
-                    </form>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </>
-          )}
-        </Card>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <form onSubmit={handleLogin} className="space-y-6 animate-slide-up">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                {roles.find(r => r.value === selectedRole)?.icon && (
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                    {(() => {
+                      const Icon = roles.find(r => r.value === selectedRole)!.icon;
+                      return <Icon className="w-5 h-5 text-primary-foreground" />;
+                    })()}
+                  </div>
+                )}
+                <span className="font-semibold text-sm">{roles.find(r => r.value === selectedRole)?.label}</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedRole(null)}
+              >
+                Trocar
+              </Button>
+            </div>
 
-        <p className="text-center text-primary-foreground/60 text-sm mt-6">
-          Simulador bancário para fins educacionais
-        </p>
-      </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Email</label>
+                <Input
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Senha</label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full gradient-primary text-primary-foreground shadow-purple">
+              Entrar
+            </Button>
+
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground mb-2 font-semibold">Contas de demonstração:</p>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p>• Cliente: joao@email.com</p>
+                <p>• Agente: ana@email.com</p>
+                <p>• Admin: admin@email.com</p>
+                <p className="mt-2 italic">Senha: qualquer valor</p>
+              </div>
+            </div>
+          </form>
+        )}
+      </Card>
     </div>
   );
 };

@@ -1,56 +1,73 @@
-💜 NU Sim Bank
-🏦 Sobre o Projeto
+# Welcome to your Lovable project
 
-O NU Sim Bank é um simulador bancário digital inspirado na experiência e no design do aplicativo Nubank, criado com foco em simplicidade, fluidez e usabilidade moderna.
+## Project info
 
-O sistema permite simular funcionalidades bancárias como Pix, transferências, pagamentos, depósitos e controle de gastos, além de possuir três tipos de contas:
+**URL**: https://lovable.dev/projects/8430f5ab-42fb-472c-a115-ed233958e73a
 
-Cliente: pode movimentar saldo, visualizar transações e solicitar empréstimos.
+## How can I edit this code?
 
-Agente Financeiro: analisa e aprova solicitações de empréstimos.
+There are several ways of editing your application.
 
-Administrador: gerencia usuários e visualiza estatísticas gerais do sistema.
+**Use Lovable**
 
-🔗 Acesse o site publicado:
-👉 https://nu-sim-bank.vercel.app/
+Simply visit the [Lovable Project](https://lovable.dev/projects/8430f5ab-42fb-472c-a115-ed233958e73a) and start prompting.
 
-🧭 Funcionalidades Principais
+Changes made via Lovable will be committed automatically to this repo.
 
-Login com seleção de tipo de conta (Cliente, Agente ou ADM)
+**Use your preferred IDE**
 
-Simulação de saldo, Pix, transferência e pagamento
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-Histórico de transações salvas em memória (ArrayList)
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-Painel administrativo para gerenciamento de contas
+Follow these steps:
 
-Interface intuitiva e responsiva, com design inspirado no Nubank
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-Gráficos de consumo total e planejamento financeiro
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
+# Step 3: Install the necessary dependencies.
+npm i
 
-<img width="1899" height="941" alt="image" src="https://github.com/user-attachments/assets/8a6c7693-55e9-454a-962d-d2372337dbe8" />
-<img width="1900" height="938" alt="image" src="https://github.com/user-attachments/assets/bc34937a-62e2-4403-acbd-bf07e5310500" />
-<img width="1919" height="939" alt="image" src="https://github.com/user-attachments/assets/af34b4c7-30bf-4d56-8680-fb418f393089" />
-<img width="1900" height="938" alt="image" src="https://github.com/user-attachments/assets/a1134f4f-6a8a-46f6-8641-017389670ea8" />
-⚙️ Tecnologias Utilizadas
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
 
-Este projeto foi desenvolvido com:
+**Edit a file directly in GitHub**
 
-⚡ Vite
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-⚛️ React
+**Use GitHub Codespaces**
 
-🟦 TypeScript
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-🎨 Tailwind CSS
+## What technologies are used for this project?
 
-🧩 shadcn/ui
+This project is built with:
 
-💾 ArrayList (para simulação de dados em memória)
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-🧠 Desenvolvido por
+## How can I deploy this project?
 
-Márcio Camargo de Oliveira
-💻 Estudante de Desenvolvimento de Sistemas
-💬 Apaixonado por design UX/UI e soluções digitais
+Simply open [Lovable](https://lovable.dev/projects/8430f5ab-42fb-472c-a115-ed233958e73a) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

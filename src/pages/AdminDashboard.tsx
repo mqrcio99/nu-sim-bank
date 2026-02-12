@@ -1,102 +1,82 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Shield, LogOut, Users, UserCog, User, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
-interface UserWithRole {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  balance?: number;
-}
+import { Shield, LogOut, Users, UserCog, User, Trash2, Edit, Plus } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const { user, profile, role, signOut, loading } = useAuth();
+  const { currentUser, logout, users, addUser, updateUser, deleteUser } = useAuth();
   const navigate = useNavigate();
-  const [users, setUsers] = useState<UserWithRole[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    cpf: '',
+    role: 'client' as UserRole,
+    balance: 0,
+    creditLimit: 0
+  });
 
-  useEffect(() => {
-    if (!loading && (!user || role !== 'admin')) {
-      navigate('/login');
-    }
-  }, [user, role, loading, navigate]);
-
-  useEffect(() => {
-    if (user && role === 'admin') {
-      fetchAllUsers();
-    }
-  }, [user, role]);
-
-  const fetchAllUsers = async () => {
-    setLoadingUsers(true);
-    try {
-      // Fetch profiles with their roles and accounts
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, name');
-
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      const { data: accounts } = await supabase
-        .from('accounts')
-        .select('user_id, balance');
-
-      if (profiles && roles) {
-        const usersWithRoles = profiles.map(p => {
-          const userRole = roles.find(r => r.user_id === p.id);
-          const userAccount = accounts?.find(a => a.user_id === p.id);
-          return {
-            id: p.id,
-            name: p.name,
-            email: '',
-            role: (userRole?.role || 'client') as UserRole,
-            balance: userAccount?.balance || 0
-          };
-        });
-        setUsers(usersWithRoles);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-    setLoadingUsers(false);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!user || !profile) {
+  if (!currentUser) {
+    navigate('/login');
     return null;
   }
 
-  const handleLogout = async () => {
-    await signOut();
+  const handleLogout = () => {
+    logout();
     navigate('/login');
   };
 
-  const getRoleIcon = (userRole: UserRole) => {
-    switch (userRole) {
+  const handleAddUser = () => {
+    if (!newUser.name || !newUser.email || !newUser.cpf) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+
+    addUser(newUser);
+    toast.success('Usuário adicionado com sucesso!');
+    setNewUser({
+      name: '',
+      email: '',
+      cpf: '',
+      role: 'client',
+      balance: 0,
+      creditLimit: 0
+    });
+  };
+
+  const handleUpdateUser = () => {
+    if (!editingUser) return;
+
+    updateUser(editingUser.id, editingUser);
+    toast.success('Usuário atualizado com sucesso!');
+    setEditingUser(null);
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (userId === currentUser.id) {
+      toast.error('Você não pode deletar sua própria conta');
+      return;
+    }
+
+    deleteUser(userId);
+    toast.success('Usuário removido com sucesso!');
+  };
+
+  const getRoleIcon = (role: UserRole) => {
+    switch (role) {
       case 'client': return User;
       case 'agent': return UserCog;
       case 'admin': return Shield;
     }
   };
 
-  const getRoleLabel = (userRole: UserRole) => {
-    switch (userRole) {
+  const getRoleLabel = (role: UserRole) => {
+    switch (role) {
       case 'client': return 'Cliente';
       case 'agent': return 'Agente';
       case 'admin': return 'Admin';
@@ -121,7 +101,7 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">Painel Administrativo</h1>
-                <p className="text-muted-foreground">{profile.name}</p>
+                <p className="text-muted-foreground">{currentUser.name}</p>
               </div>
             </div>
           </div>
@@ -148,53 +128,144 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Info Card */}
-        <Card className="p-6 animate-slide-up bg-primary/5 border-primary/20" style={{ animationDelay: '0.1s' }}>
-          <p className="text-sm text-muted-foreground">
-            💡 Os novos usuários devem se cadastrar pela página de login. Cada novo usuário recebe automaticamente R$ 5.000 de saldo inicial e a role de "cliente".
-          </p>
+        {/* Add User */}
+        <Card className="p-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            Adicionar Novo Usuário
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              placeholder="Nome completo"
+              value={newUser.name}
+              onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+            />
+            <Input
+              placeholder="Email"
+              type="email"
+              value={newUser.email}
+              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+            />
+            <Input
+              placeholder="CPF"
+              value={newUser.cpf}
+              onChange={(e) => setNewUser({ ...newUser, cpf: e.target.value })}
+            />
+            <select
+              className="w-full p-2 rounded-lg border border-input bg-background"
+              value={newUser.role}
+              onChange={(e) => setNewUser({ ...newUser, role: e.target.value as UserRole })}
+            >
+              <option value="client">Cliente</option>
+              <option value="agent">Agente Financeiro</option>
+              <option value="admin">Administrador</option>
+            </select>
+            {newUser.role === 'client' && (
+              <>
+                <Input
+                  placeholder="Saldo inicial"
+                  type="number"
+                  value={newUser.balance}
+                  onChange={(e) => setNewUser({ ...newUser, balance: parseFloat(e.target.value) || 0 })}
+                />
+                <Input
+                  placeholder="Limite do cartão"
+                  type="number"
+                  value={newUser.creditLimit}
+                  onChange={(e) => setNewUser({ ...newUser, creditLimit: parseFloat(e.target.value) || 0 })}
+                />
+              </>
+            )}
+          </div>
+          <Button onClick={handleAddUser} className="mt-4 gradient-primary">
+            Adicionar Usuário
+          </Button>
         </Card>
 
         {/* Users List */}
         <Card className="p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          <h2 className="text-xl font-bold mb-6">Usuários Cadastrados</h2>
-          {loadingUsers ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : users.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Nenhum usuário cadastrado</p>
-          ) : (
-            <div className="space-y-3">
-              {users.map((u) => {
-                const RoleIcon = getRoleIcon(u.role);
-                return (
-                  <div key={u.id} className="p-4 rounded-xl border-2 border-border hover:border-primary transition-smooth">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
-                          <RoleIcon className="w-6 h-6 text-primary-foreground" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold">{u.name}</h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                              {getRoleLabel(u.role)}
+          <h2 className="text-xl font-bold mb-6">Gerenciar Usuários</h2>
+          <div className="space-y-3">
+            {users.map((user) => {
+              const RoleIcon = getRoleIcon(user.role);
+              return (
+                <div key={user.id} className="p-4 rounded-xl border-2 border-border hover:border-primary transition-smooth">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
+                        <RoleIcon className="w-6 h-6 text-primary-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold">{user.name}</h3>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                            {getRoleLabel(user.role)}
+                          </span>
+                          {user.role === 'client' && (
+                            <span className="text-xs text-muted-foreground">
+                              Saldo: R$ {user.balance.toLocaleString('pt-BR')}
                             </span>
-                            {u.role === 'client' && u.balance !== undefined && (
-                              <span className="text-xs text-muted-foreground">
-                                Saldo: R$ {u.balance.toLocaleString('pt-BR')}
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
+                    <div className="flex gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingUser(user)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Editar Usuário</DialogTitle>
+                          </DialogHeader>
+                          {editingUser && (
+                            <div className="space-y-4">
+                              <Input
+                                placeholder="Nome"
+                                value={editingUser.name}
+                                onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Email"
+                                value={editingUser.email}
+                                onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                              />
+                              {editingUser.role === 'client' && (
+                                <Input
+                                  placeholder="Saldo"
+                                  type="number"
+                                  value={editingUser.balance}
+                                  onChange={(e) => setEditingUser({ ...editingUser, balance: parseFloat(e.target.value) })}
+                                />
+                              )}
+                              <Button onClick={handleUpdateUser} className="w-full">
+                                Salvar Alterações
+                              </Button>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id)}
+                        disabled={user.id === currentUser.id}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })}
+          </div>
         </Card>
       </div>
     </div>
