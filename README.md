@@ -8,11 +8,11 @@ Uma simulação de banco digital inspirada no NuBank — aplicação web interat
 
 ## 🔗 Link do Projeto
 
-**⚡ Clique aqui para ver a aplicação em execução:** [Ver Deploy Online](https://u-sim-bank.vercel.app/)
+** Clique aqui para ver a aplicação em execução:** [Ver Deploy Online](https://u-sim-bank.vercel.app/)
 
 ---
 
-## 📸 Screenshots
+##  Screenshots
 
 | Landing Page | Login |
 |---|---|
@@ -26,12 +26,12 @@ Uma simulação de banco digital inspirada no NuBank — aplicação web interat
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
-- 🏠 Landing page institucional
-- 🔐 Sistema de autenticação com múltiplos perfis (Cliente, Agente, Admin)
-- 📱 Design responsivo para mobile e desktop
-- 💜 Visual inspirado no NuBank
+-  Landing page institucional
+-  Sistema de autenticação com múltiplos perfis (Cliente, Agente, Admin)
+-  Design responsivo para mobile e desktop
+-  Visual inspirado no NuBank
 
 ---
 
@@ -39,11 +39,11 @@ Uma simulação de banco digital inspirada no NuBank — aplicação web interat
 
 | Tecnologia | Uso |
 |---|---|
-| ⚡ **Vite** | Ferramenta de build rápida para desenvolvimento ágil e otimizado |
-| 📘 **TypeScript** | Tipagem estática para código mais seguro e escalável |
-| ⚛️ **React** | Biblioteca componentizada para construção da interface dinâmica |
-| 🧱 **shadcn/ui** | Componentes de interface elegantes, acessíveis e customizáveis |
-| 🎨 **Tailwind CSS** | Framework utilitário para estilização rápida e design responsivo |
+|  **Vite** | Ferramenta de build rápida para desenvolvimento ágil e otimizado |
+|  **TypeScript** | Tipagem estática para código mais seguro e escalável |
+|  **React** | Biblioteca componentizada para construção da interface dinâmica |
+|  **shadcn/ui** | Componentes de interface elegantes, acessíveis e customizáveis |
+|  **Tailwind CSS** | Framework utilitário para estilização rápida e design responsivo |
 
 ---
 
