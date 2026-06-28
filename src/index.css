@@ -156,11 +156,35 @@ All colors MUST be HSL.
   }
   
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out;
+    animation: fade-in 0.6s ease-out both;
   }
   
   .animate-slide-up {
-    animation: slide-up 0.5s ease-out;
+    animation: slide-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .motion-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(20px);
+    opacity: 0.35;
+    animation: drift 10s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  .motion-grid {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: linear-gradient(to bottom, black, transparent);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
   }
 }
 
@@ -176,10 +200,19 @@ All colors MUST be HSL.
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(24px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(30px, -40px, 0) scale(1.2);
   }
 }

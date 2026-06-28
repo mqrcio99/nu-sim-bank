@@ -33,6 +33,9 @@ const Index = () => {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="gradient-primary min-h-[80vh] flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="motion-grid absolute inset-0 opacity-40" />
+        <div className="motion-orb left-[-5%] top-[10%] h-40 w-40 bg-white/30" />
+        <div className="motion-orb right-[5%] bottom-[8%] h-56 w-56 bg-fuchsia-300/30" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
         <div className="max-w-4xl mx-auto text-center relative z-10 animate-fade-in">
           <h1 className="text-5xl md:text-7xl font-bold text-primary-foreground mb-6">
@@ -61,7 +64,7 @@ const Index = () => {
             {features.map((feature, index) => (
               <Card 
                 key={index} 
-                className="p-6 hover:shadow-hover transition-smooth animate-slide-up"
+                className="p-6 hover:shadow-hover transition-smooth animate-slide-up glass-card"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center mb-4">
