@@ -16,16 +16,21 @@ import {
   Wallet,
   TrendingUp,
   Receipt,
-  PiggyBank
+  PiggyBank,
+  Target,
+  PlusCircle
 } from 'lucide-react';
 
 const ClientDashboard = () => {
-  const { currentUser, logout, addTransaction, requestLoan } = useAuth();
+  const { currentUser, logout, addTransaction, requestLoan, createSavingsGoal } = useAuth();
   const navigate = useNavigate();
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDescription, setTransferDescription] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
   const [loanTerm, setLoanTerm] = useState('12');
+  const [goalName, setGoalName] = useState('');
+  const [goalTarget, setGoalTarget] = useState('');
+  const [goalCurrent, setGoalCurrent] = useState('');
 
   if (!currentUser) {
     navigate('/login');
@@ -72,6 +77,28 @@ const ClientDashboard = () => {
     requestLoan(amount, term);
     toast.success('Solicitação de empréstimo enviada!');
     setLoanAmount('');
+  };
+
+  const handleCreateGoal = () => {
+    const targetAmount = parseFloat(goalTarget);
+    const currentAmount = parseFloat(goalCurrent);
+
+    if (!goalName.trim() || isNaN(targetAmount) || targetAmount <= 0 || isNaN(currentAmount) || currentAmount < 0) {
+      toast.error('Preencha os dados da meta corretamente');
+      return;
+    }
+
+    createSavingsGoal({
+      name: goalName.trim(),
+      targetAmount,
+      currentAmount,
+      deadline: 'Meta personalizada'
+    });
+
+    toast.success('Meta de economia criada com sucesso!');
+    setGoalName('');
+    setGoalTarget('');
+    setGoalCurrent('');
   };
 
   const quickActions = [
@@ -164,9 +191,78 @@ const ClientDashboard = () => {
           ))}
         </div>
 
+        <Card className="p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center gap-2 mb-6">
+            <Target className="w-5 h-5 text-primary" />
+            <h3 className="font-bold text-lg">Metas de Economia</h3>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="space-y-4">
+              {(currentUser.savingsGoals || []).length === 0 ? (
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  Nenhuma meta criada ainda. Defina uma para começar a organizar seus objetivos.
+                </div>
+              ) : (
+                (currentUser.savingsGoals || []).map((goal) => {
+                  const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+                  const remaining = Math.max(goal.targetAmount - goal.currentAmount, 0);
+
+                  return (
+                    <div key={goal.id} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold">{goal.name}</p>
+                          <p className="text-sm text-muted-foreground">Prazo: {goal.deadline}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">R$ {goal.currentAmount.toLocaleString('pt-BR')}</p>
+                          <p className="text-xs text-muted-foreground">de R$ {goal.targetAmount.toLocaleString('pt-BR')}</p>
+                        </div>
+                      </div>
+                      <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                        <div className="h-full gradient-primary rounded-full" style={{ width: `${progress}%` }} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{progress.toFixed(0)}% alcançado</span>
+                        <span>Faltam R$ {remaining.toLocaleString('pt-BR')}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div className="space-y-4 rounded-xl bg-accent/30 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <PlusCircle className="w-4 h-4 text-primary" />
+                Nova meta
+              </div>
+              <Input
+                placeholder="Nome da meta"
+                value={goalName}
+                onChange={(e) => setGoalName(e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Valor da meta"
+                value={goalTarget}
+                onChange={(e) => setGoalTarget(e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder="Valor já guardado"
+                value={goalCurrent}
+                onChange={(e) => setGoalCurrent(e.target.value)}
+              />
+              <Button onClick={handleCreateGoal} className="w-full gradient-primary">
+                Criar meta
+              </Button>
+            </div>
+          </div>
+        </Card>
+
         <div className="grid md:grid-cols-2 gap-6">
           {/* Spending Chart */}
-          <Card className="p-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <Card className="p-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
             <div className="flex items-center gap-2 mb-6">
               <TrendingUp className="w-5 h-5 text-primary" />
               <h3 className="font-bold text-lg">Gastos por Categoria</h3>

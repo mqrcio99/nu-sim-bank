@@ -21,6 +21,14 @@ export interface Loan {
   requestDate: Date;
 }
 
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  deadline: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -31,6 +39,7 @@ export interface User {
   creditLimit?: number;
   transactions: Transaction[];
   loans: Loan[];
+  savingsGoals: SavingsGoal[];
 }
 
 interface AuthContextType {
@@ -41,8 +50,9 @@ interface AuthContextType {
   logout: () => void;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
   requestLoan: (amount: number, term: number) => void;
+  createSavingsGoal: (goal: Omit<SavingsGoal, 'id'>) => void;
   updateLoanStatus: (loanId: string, status: 'approved' | 'rejected') => void;
-  addUser: (user: Omit<User, 'id' | 'transactions' | 'loans'>) => void;
+  addUser: (user: Omit<User, 'id' | 'transactions' | 'loans' | 'savingsGoals'>) => void;
   updateUser: (userId: string, updates: Partial<User>) => void;
   deleteUser: (userId: string) => void;
 }
@@ -85,7 +95,16 @@ const initialUsers: User[] = [
         category: 'Recebimento'
       }
     ],
-    loans: []
+    loans: [],
+    savingsGoals: [
+      {
+        id: 'g1',
+        name: 'Viagem de fim de ano',
+        targetAmount: 5000,
+        currentAmount: 1800,
+        deadline: 'Dez/2026'
+      }
+    ]
   },
   {
     id: '2',
@@ -95,7 +114,8 @@ const initialUsers: User[] = [
     role: 'agent',
     balance: 0,
     transactions: [],
-    loans: []
+    loans: [],
+    savingsGoals: []
   },
   {
     id: '3',
@@ -105,7 +125,8 @@ const initialUsers: User[] = [
     role: 'admin',
     balance: 0,
     transactions: [],
-    loans: []
+    loans: [],
+    savingsGoals: []
   }
 ];
 
@@ -182,6 +203,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
   };
 
+  const createSavingsGoal = (goal: Omit<SavingsGoal, 'id'>) => {
+    if (!currentUser) return;
+
+    const newGoal: SavingsGoal = {
+      id: Date.now().toString(),
+      ...goal
+    };
+
+    const updatedUser = {
+      ...currentUser,
+      savingsGoals: [...currentUser.savingsGoals, newGoal]
+    };
+
+    setCurrentUser(updatedUser);
+    setUsers(users.map(u => u.id === currentUser.id ? updatedUser : u));
+  };
+
   const updateLoanStatus = (loanId: string, status: 'approved' | 'rejected') => {
     setLoans(loans.map(loan => 
       loan.id === loanId ? { ...loan, status } : loan
@@ -204,12 +242,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const addUser = (user: Omit<User, 'id' | 'transactions' | 'loans'>) => {
+  const addUser = (user: Omit<User, 'id' | 'transactions' | 'loans' | 'savingsGoals'>) => {
     const newUser: User = {
       ...user,
       id: Date.now().toString(),
       transactions: [],
-      loans: []
+      loans: [],
+      savingsGoals: []
     };
     setUsers([...users, newUser]);
   };
@@ -237,6 +276,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       logout,
       addTransaction,
       requestLoan,
+      createSavingsGoal,
       updateLoanStatus,
       addUser,
       updateUser,
