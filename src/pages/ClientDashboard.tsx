@@ -470,7 +470,10 @@ const ClientDashboard = () => {
           </div>
         </Card>
       </div>
+
+      <TransactionReceipt receipt={receipt} onClose={() => setReceipt(null)} />
     </div>
+
   );
 };
 
