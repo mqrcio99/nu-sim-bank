@@ -215,19 +215,33 @@ const ClientDashboard = () => {
         {/* Balance Card */}
         <Card className="gradient-primary p-6 md:p-8 text-primary-foreground shadow-purple animate-slide-up">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-primary-foreground/80">
-              <DollarSign className="w-5 h-5" />
-              <span className="text-sm font-medium">Saldo disponível</span>
+            <div className="flex items-center justify-between gap-2 text-primary-foreground/80">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                <span className="text-sm font-medium">Saldo disponível</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBalance((v) => !v)}
+                aria-label={showBalance ? 'Esconder saldo' : 'Mostrar saldo'}
+                className="p-2 rounded-full hover:bg-primary-foreground/15 transition-smooth"
+              >
+                {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </button>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold">
-              R$ {currentUser.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {showBalance
+                ? `R$ ${currentUser.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                : 'R$ ••••••'}
             </h2>
             <div className="flex items-center gap-4 pt-4 border-t border-primary-foreground/20">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
                 <div>
                   <p className="text-xs text-primary-foreground/80">Limite do cartão</p>
-                  <p className="font-semibold">R$ {currentUser.creditLimit?.toLocaleString('pt-BR')}</p>
+                  <p className="font-semibold">
+                    {showBalance ? `R$ ${currentUser.creditLimit?.toLocaleString('pt-BR')}` : 'R$ ••••'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -236,8 +250,15 @@ const ClientDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          {quickActions.map((action, index) => (
-            <Dialog key={index}>
+          {quickActions.map((action) => (
+            <Dialog
+              key={action.type}
+              open={openAction === action.type}
+              onOpenChange={(open) => {
+                setOpenAction(open ? action.type : null);
+                if (!open) resetActionForm();
+              }}
+            >
               <DialogTrigger asChild>
                 <Card className="p-6 cursor-pointer hover:shadow-hover transition-smooth group">
                   <div className="flex flex-col items-center gap-3 text-center">
@@ -253,21 +274,36 @@ const ClientDashboard = () => {
                   <DialogTitle>{action.label}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <Input
-                    type="number"
-                    placeholder="Valor"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Descrição"
-                    value={transferDescription}
-                    onChange={(e) => setTransferDescription(e.target.value)}
-                  />
-                  <Button onClick={handleTransfer} className="w-full">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Valor</label>
+                    <Input
+                      type="number"
+                      placeholder="R$ 0,00"
+                      value={transferAmount}
+                      onChange={(e) => setTransferAmount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">{action.recipientLabel}</label>
+                    <Input
+                      placeholder={action.recipientPlaceholder}
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Descrição (opcional)</label>
+                    <Input
+                      placeholder="Ex: aluguel de janeiro"
+                      value={transferDescription}
+                      onChange={(e) => setTransferDescription(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={() => handleAction(action.type)} className="w-full gradient-primary">
                     Confirmar
                   </Button>
                 </div>
+
               </DialogContent>
             </Dialog>
           ))}
