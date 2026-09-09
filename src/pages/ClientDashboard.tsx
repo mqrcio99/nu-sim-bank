@@ -74,7 +74,7 @@ const randomCode = () =>
 const ClientDashboard = () => {
   const { currentUser, logout, addTransaction, requestLoan, createSavingsGoal } = useAuth();
   const navigate = useNavigate();
-  const [showBalance, setShowBalance] = useState(true);
+  const [showBalance, setShowBalance] = useState(false);
   const [openAction, setOpenAction] = useState<ActionType | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [transferAmount, setTransferAmount] = useState('');
