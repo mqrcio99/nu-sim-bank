@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import TransactionReceipt, { ReceiptData } from '@/components/TransactionReceipt';
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -18,14 +19,67 @@ import {
   Receipt,
   PiggyBank,
   Target,
-  PlusCircle
+  PlusCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+
+type ActionType = 'pix' | 'transfer' | 'payment' | 'deposit';
+
+const actionConfig: Record<ActionType, {
+  label: string;
+  icon: typeof Send;
+  color: string;
+  recipientLabel: string;
+  recipientPlaceholder: string;
+  category: string;
+}> = {
+  pix: {
+    label: 'Pix',
+    icon: Send,
+    color: 'text-primary',
+    recipientLabel: 'Chave Pix do destinatário',
+    recipientPlaceholder: 'E-mail, CPF ou telefone',
+    category: 'Transferência',
+  },
+  transfer: {
+    label: 'Transferir',
+    icon: ArrowUpRight,
+    color: 'text-blue-600',
+    recipientLabel: 'Nome do destinatário',
+    recipientPlaceholder: 'Ex: Maria Souza',
+    category: 'Transferência',
+  },
+  payment: {
+    label: 'Pagar',
+    icon: Receipt,
+    color: 'text-orange-600',
+    recipientLabel: 'Beneficiário',
+    recipientPlaceholder: 'Ex: Companhia de Energia',
+    category: 'Contas',
+  },
+  deposit: {
+    label: 'Depositar',
+    icon: Wallet,
+    color: 'text-success',
+    recipientLabel: 'Origem do depósito',
+    recipientPlaceholder: 'Ex: Salário',
+    category: 'Recebimento',
+  },
+};
+
+const randomCode = () =>
+  Array.from({ length: 4 }, () => Math.random().toString(36).slice(2, 7).toUpperCase()).join('-');
 
 const ClientDashboard = () => {
   const { currentUser, logout, addTransaction, requestLoan, createSavingsGoal } = useAuth();
   const navigate = useNavigate();
+  const [showBalance, setShowBalance] = useState(true);
+  const [openAction, setOpenAction] = useState<ActionType | null>(null);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDescription, setTransferDescription] = useState('');
+  const [recipientName, setRecipientName] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
   const [loanTerm, setLoanTerm] = useState('12');
   const [goalName, setGoalName] = useState('');
@@ -42,27 +96,56 @@ const ClientDashboard = () => {
     navigate('/login');
   };
 
-  const handleTransfer = () => {
+  const resetActionForm = () => {
+    setTransferAmount('');
+    setTransferDescription('');
+    setRecipientName('');
+  };
+
+  const handleAction = (type: ActionType) => {
+    const config = actionConfig[type];
     const amount = parseFloat(transferAmount);
+
     if (isNaN(amount) || amount <= 0) {
       toast.error('Valor inválido');
       return;
     }
-    if (amount > currentUser.balance) {
+    if (type !== 'deposit' && amount > currentUser.balance) {
       toast.error('Saldo insuficiente');
       return;
     }
+    if (!recipientName.trim()) {
+      toast.error(`Informe: ${config.recipientLabel.toLowerCase()}`);
+      return;
+    }
+
+    const signedAmount = type === 'deposit' ? amount : -amount;
+    const description =
+      transferDescription.trim() || `${config.label} - ${recipientName.trim()}`;
 
     addTransaction({
-      type: 'transfer',
-      amount: -amount,
-      description: transferDescription || 'Transferência',
-      category: 'Transferência'
+      type,
+      amount: signedAmount,
+      description,
+      category: config.category,
     });
 
-    toast.success('Transferência realizada com sucesso!');
-    setTransferAmount('');
-    setTransferDescription('');
+    const now = new Date();
+    setReceipt({
+      id: `${now.getTime()}`,
+      authCode: randomCode(),
+      type,
+      amount: signedAmount,
+      date: now,
+      description,
+      senderName: currentUser.name,
+      senderCpf: currentUser.cpf,
+      recipient: recipientName.trim(),
+    });
+
+    toast.success('Operação realizada com sucesso!');
+    setOpenAction(null);
+    resetActionForm();
   };
 
   const handleLoanRequest = () => {
@@ -101,12 +184,10 @@ const ClientDashboard = () => {
     setGoalCurrent('');
   };
 
-  const quickActions = [
-    { icon: Send, label: 'Pix', color: 'text-primary' },
-    { icon: ArrowUpRight, label: 'Transferir', color: 'text-blue-600' },
-    { icon: Receipt, label: 'Pagar', color: 'text-orange-600' },
-    { icon: Wallet, label: 'Depositar', color: 'text-success' }
-  ];
+  const quickActions = (Object.keys(actionConfig) as ActionType[]).map((type) => ({
+    type,
+    ...actionConfig[type],
+  }));
 
   const spendingByCategory = [
     { category: 'Alimentação', amount: 450, percentage: 35 },
@@ -114,6 +195,7 @@ const ClientDashboard = () => {
     { category: 'Lazer', amount: 320, percentage: 25 },
     { category: 'Contas', amount: 230, percentage: 18 }
   ];
+
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 animate-fade-in">
@@ -133,19 +215,33 @@ const ClientDashboard = () => {
         {/* Balance Card */}
         <Card className="gradient-primary p-6 md:p-8 text-primary-foreground shadow-purple animate-slide-up">
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-primary-foreground/80">
-              <DollarSign className="w-5 h-5" />
-              <span className="text-sm font-medium">Saldo disponível</span>
+            <div className="flex items-center justify-between gap-2 text-primary-foreground/80">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5" />
+                <span className="text-sm font-medium">Saldo disponível</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBalance((v) => !v)}
+                aria-label={showBalance ? 'Esconder saldo' : 'Mostrar saldo'}
+                className="p-2 rounded-full hover:bg-primary-foreground/15 transition-smooth"
+              >
+                {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </button>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold">
-              R$ {currentUser.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {showBalance
+                ? `R$ ${currentUser.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                : 'R$ ••••••'}
             </h2>
             <div className="flex items-center gap-4 pt-4 border-t border-primary-foreground/20">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5" />
                 <div>
                   <p className="text-xs text-primary-foreground/80">Limite do cartão</p>
-                  <p className="font-semibold">R$ {currentUser.creditLimit?.toLocaleString('pt-BR')}</p>
+                  <p className="font-semibold">
+                    {showBalance ? `R$ ${currentUser.creditLimit?.toLocaleString('pt-BR')}` : 'R$ ••••'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -154,8 +250,15 @@ const ClientDashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          {quickActions.map((action, index) => (
-            <Dialog key={index}>
+          {quickActions.map((action) => (
+            <Dialog
+              key={action.type}
+              open={openAction === action.type}
+              onOpenChange={(open) => {
+                setOpenAction(open ? action.type : null);
+                if (!open) resetActionForm();
+              }}
+            >
               <DialogTrigger asChild>
                 <Card className="p-6 cursor-pointer hover:shadow-hover transition-smooth group">
                   <div className="flex flex-col items-center gap-3 text-center">
@@ -171,21 +274,36 @@ const ClientDashboard = () => {
                   <DialogTitle>{action.label}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <Input
-                    type="number"
-                    placeholder="Valor"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Descrição"
-                    value={transferDescription}
-                    onChange={(e) => setTransferDescription(e.target.value)}
-                  />
-                  <Button onClick={handleTransfer} className="w-full">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Valor</label>
+                    <Input
+                      type="number"
+                      placeholder="R$ 0,00"
+                      value={transferAmount}
+                      onChange={(e) => setTransferAmount(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">{action.recipientLabel}</label>
+                    <Input
+                      placeholder={action.recipientPlaceholder}
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Descrição (opcional)</label>
+                    <Input
+                      placeholder="Ex: aluguel de janeiro"
+                      value={transferDescription}
+                      onChange={(e) => setTransferDescription(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={() => handleAction(action.type)} className="w-full gradient-primary">
                     Confirmar
                   </Button>
                 </div>
+
               </DialogContent>
             </Dialog>
           ))}
@@ -352,7 +470,10 @@ const ClientDashboard = () => {
           </div>
         </Card>
       </div>
+
+      <TransactionReceipt receipt={receipt} onClose={() => setReceipt(null)} />
     </div>
+
   );
 };
 
