@@ -188,6 +188,23 @@ All colors MUST be HSL.
   }
 }
 
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #receipt-print-area,
+  #receipt-print-area * {
+    visibility: visible;
+  }
+  #receipt-print-area {
+    position: absolute;
+    inset: 0;
+    margin: 0 auto;
+    padding: 24px;
+  }
+}
+
+
 @keyframes fade-in {
   from {
     opacity: 0;
