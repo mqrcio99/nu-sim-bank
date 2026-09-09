@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import TransactionReceipt, { ReceiptData } from '@/components/TransactionReceipt';
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -18,14 +19,67 @@ import {
   Receipt,
   PiggyBank,
   Target,
-  PlusCircle
+  PlusCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+
+type ActionType = 'pix' | 'transfer' | 'payment' | 'deposit';
+
+const actionConfig: Record<ActionType, {
+  label: string;
+  icon: typeof Send;
+  color: string;
+  recipientLabel: string;
+  recipientPlaceholder: string;
+  category: string;
+}> = {
+  pix: {
+    label: 'Pix',
+    icon: Send,
+    color: 'text-primary',
+    recipientLabel: 'Chave Pix do destinatário',
+    recipientPlaceholder: 'E-mail, CPF ou telefone',
+    category: 'Transferência',
+  },
+  transfer: {
+    label: 'Transferir',
+    icon: ArrowUpRight,
+    color: 'text-blue-600',
+    recipientLabel: 'Nome do destinatário',
+    recipientPlaceholder: 'Ex: Maria Souza',
+    category: 'Transferência',
+  },
+  payment: {
+    label: 'Pagar',
+    icon: Receipt,
+    color: 'text-orange-600',
+    recipientLabel: 'Beneficiário',
+    recipientPlaceholder: 'Ex: Companhia de Energia',
+    category: 'Contas',
+  },
+  deposit: {
+    label: 'Depositar',
+    icon: Wallet,
+    color: 'text-success',
+    recipientLabel: 'Origem do depósito',
+    recipientPlaceholder: 'Ex: Salário',
+    category: 'Recebimento',
+  },
+};
+
+const randomCode = () =>
+  Array.from({ length: 4 }, () => Math.random().toString(36).slice(2, 7).toUpperCase()).join('-');
 
 const ClientDashboard = () => {
   const { currentUser, logout, addTransaction, requestLoan, createSavingsGoal } = useAuth();
   const navigate = useNavigate();
+  const [showBalance, setShowBalance] = useState(true);
+  const [openAction, setOpenAction] = useState<ActionType | null>(null);
+  const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDescription, setTransferDescription] = useState('');
+  const [recipientName, setRecipientName] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
   const [loanTerm, setLoanTerm] = useState('12');
   const [goalName, setGoalName] = useState('');
@@ -42,27 +96,56 @@ const ClientDashboard = () => {
     navigate('/login');
   };
 
-  const handleTransfer = () => {
+  const resetActionForm = () => {
+    setTransferAmount('');
+    setTransferDescription('');
+    setRecipientName('');
+  };
+
+  const handleAction = (type: ActionType) => {
+    const config = actionConfig[type];
     const amount = parseFloat(transferAmount);
+
     if (isNaN(amount) || amount <= 0) {
       toast.error('Valor inválido');
       return;
     }
-    if (amount > currentUser.balance) {
+    if (type !== 'deposit' && amount > currentUser.balance) {
       toast.error('Saldo insuficiente');
       return;
     }
+    if (!recipientName.trim()) {
+      toast.error(`Informe: ${config.recipientLabel.toLowerCase()}`);
+      return;
+    }
+
+    const signedAmount = type === 'deposit' ? amount : -amount;
+    const description =
+      transferDescription.trim() || `${config.label} - ${recipientName.trim()}`;
 
     addTransaction({
-      type: 'transfer',
-      amount: -amount,
-      description: transferDescription || 'Transferência',
-      category: 'Transferência'
+      type,
+      amount: signedAmount,
+      description,
+      category: config.category,
     });
 
-    toast.success('Transferência realizada com sucesso!');
-    setTransferAmount('');
-    setTransferDescription('');
+    const now = new Date();
+    setReceipt({
+      id: `${now.getTime()}`,
+      authCode: randomCode(),
+      type,
+      amount: signedAmount,
+      date: now,
+      description,
+      senderName: currentUser.name,
+      senderCpf: currentUser.cpf,
+      recipient: recipientName.trim(),
+    });
+
+    toast.success('Operação realizada com sucesso!');
+    setOpenAction(null);
+    resetActionForm();
   };
 
   const handleLoanRequest = () => {
@@ -101,12 +184,10 @@ const ClientDashboard = () => {
     setGoalCurrent('');
   };
 
-  const quickActions = [
-    { icon: Send, label: 'Pix', color: 'text-primary' },
-    { icon: ArrowUpRight, label: 'Transferir', color: 'text-blue-600' },
-    { icon: Receipt, label: 'Pagar', color: 'text-orange-600' },
-    { icon: Wallet, label: 'Depositar', color: 'text-success' }
-  ];
+  const quickActions = (Object.keys(actionConfig) as ActionType[]).map((type) => ({
+    type,
+    ...actionConfig[type],
+  }));
 
   const spendingByCategory = [
     { category: 'Alimentação', amount: 450, percentage: 35 },
@@ -114,6 +195,7 @@ const ClientDashboard = () => {
     { category: 'Lazer', amount: 320, percentage: 25 },
     { category: 'Contas', amount: 230, percentage: 18 }
   ];
+
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 animate-fade-in">
