@@ -8,7 +8,7 @@ Uma simulação de banco digital inspirada no NuBank — aplicação web interat
 
 ## 🔗 Link do Projeto
 
-** Clique aqui para ver a aplicação em execução:** [Ver Deploy Online](https://u-sim-bank.vercel.app/)
+** Clique aqui para ver a aplicação em execução:** [Ver Deploy Online](https://nu-sim-bank.vercel.app/)
 
 ---
 
