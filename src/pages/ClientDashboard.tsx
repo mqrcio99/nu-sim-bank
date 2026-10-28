@@ -77,6 +77,9 @@ const ClientDashboard = () => {
   const [showBalance, setShowBalance] = useState(false);
   const [openAction, setOpenAction] = useState<ActionType | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [nameInput, setNameInput] = useState('');
+  const [welcomeOpen, setWelcomeOpen] = useState(true);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDescription, setTransferDescription] = useState('');
   const [recipientName, setRecipientName] = useState('');
@@ -195,7 +198,9 @@ const ClientDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Olá, {currentUser.name.split(' ')[0]}! 👋</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              {displayName ? `Olá, ${displayName.split(' ')[0]}! 👋` : 'Olá! 👋'}
+            </h1>
             <p className="text-muted-foreground">Bem-vindo de volta</p>
           </div>
           <span className="text-xs font-medium px-3 py-1 rounded-full bg-secondary text-muted-foreground">
