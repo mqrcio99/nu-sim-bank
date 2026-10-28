@@ -143,7 +143,8 @@ const initialLoans: Loan[] = [
 ];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Modo demonstração: já inicia logado na conta do cliente
+  const [currentUser, setCurrentUser] = useState<User | null>(initialUsers[0]);
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [loans, setLoans] = useState<Loan[]>(initialLoans);
 
@@ -157,7 +158,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    setCurrentUser(null);
+    setCurrentUser(users.find(u => u.role === 'client') ?? null);
   };
 
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'date'>) => {

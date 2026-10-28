@@ -86,15 +86,7 @@ const ClientDashboard = () => {
   const [goalTarget, setGoalTarget] = useState('');
   const [goalCurrent, setGoalCurrent] = useState('');
 
-  if (!currentUser) {
-    navigate('/login');
-    return null;
-  }
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  if (!currentUser) return null;
 
   const resetActionForm = () => {
     setTransferAmount('');
@@ -206,10 +198,9 @@ const ClientDashboard = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Olá, {currentUser.name.split(' ')[0]}! 👋</h1>
             <p className="text-muted-foreground">Bem-vindo de volta</p>
           </div>
-          <Button variant="ghost" onClick={handleLogout} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Sair
-          </Button>
+          <span className="text-xs font-medium px-3 py-1 rounded-full bg-secondary text-muted-foreground">
+            Conta demonstração
+          </span>
         </div>
 
         {/* Balance Card */}
