@@ -4,8 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
 import ClientDashboard from "./pages/ClientDashboard";
 import AgentDashboard from "./pages/AgentDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -21,9 +19,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ClientDashboard />} />
+            <Route path="/" element={<ClientDashboard />} />
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="/agent" element={<AgentDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
