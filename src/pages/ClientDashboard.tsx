@@ -20,6 +20,7 @@ import {
   PiggyBank,
   Target,
   PlusCircle,
+  User,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -77,6 +78,9 @@ const ClientDashboard = () => {
   const [showBalance, setShowBalance] = useState(false);
   const [openAction, setOpenAction] = useState<ActionType | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [nameInput, setNameInput] = useState('');
+  const [welcomeOpen, setWelcomeOpen] = useState(true);
   const [transferAmount, setTransferAmount] = useState('');
   const [transferDescription, setTransferDescription] = useState('');
   const [recipientName, setRecipientName] = useState('');
@@ -195,7 +199,9 @@ const ClientDashboard = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Olá, {currentUser.name.split(' ')[0]}! 👋</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              {displayName ? `Olá, ${displayName.split(' ')[0]}! 👋` : 'Olá! 👋'}
+            </h1>
             <p className="text-muted-foreground">Bem-vindo de volta</p>
           </div>
           <span className="text-xs font-medium px-3 py-1 rounded-full bg-secondary text-muted-foreground">
@@ -463,6 +469,44 @@ const ClientDashboard = () => {
       </div>
 
       <TransactionReceipt receipt={receipt} onClose={() => setReceipt(null)} />
+
+      <Dialog open={welcomeOpen} onOpenChange={setWelcomeOpen}>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden border-0 rounded-3xl">
+          <div className="gradient-primary p-8 text-primary-foreground text-center">
+            <div className="w-16 h-16 mx-auto rounded-full bg-primary-foreground/20 flex items-center justify-center mb-4">
+              <User className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-bold">Seja bem-vindo!</h2>
+            <p className="text-sm text-primary-foreground/80 mt-1">
+              Esta é uma conta demonstração. Como você se chama?
+            </p>
+          </div>
+          <div className="p-6 space-y-4">
+            <Input
+              placeholder="Digite seu nome"
+              value={nameInput}
+              autoFocus
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setDisplayName(nameInput.trim() || 'Cliente');
+                  setWelcomeOpen(false);
+                }
+              }}
+            />
+            <Button
+              className="w-full gradient-primary"
+              onClick={() => {
+                setDisplayName(nameInput.trim() || 'Cliente');
+                setWelcomeOpen(false);
+                if (nameInput.trim()) toast.success(`Olá, ${nameInput.trim().split(' ')[0]}!`);
+              }}
+            >
+              Continuar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
 
   );
